@@ -250,6 +250,7 @@ const Services = () => {
   const [isLoading, setIsLoading] = useState(initialItems.length === 0);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     // Revalidate in background without blocking initial rendering
     getDynamicServices<any[]>([]).then((data) => {
       if (Array.isArray(data) && data.length > 0) {

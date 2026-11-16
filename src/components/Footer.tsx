@@ -45,6 +45,11 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/internship" className="text-slate-600 dark:text-slate-400 hover:text-sky-600 transition-colors font-medium text-sky-600 dark:text-sky-400">
+                  Internship Program
+                </Link>
+              </li>
+              <li>
                 <Link to="/case-studies" className="text-slate-600 dark:text-slate-400 hover:text-sky-600 transition-colors">
                   Case Studies
                 </Link>
@@ -155,6 +160,9 @@ const Footer = () => {
             </Link>
             <Link to="/refund-and-cancellation-policy" className="hover:text-slate-900 dark:hover:text-white transition-colors">
               Refund & Cancellation Policy
+            </Link>
+            <Link to="/sitemap" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+              Sitemap
             </Link>
           </div>
         </div>

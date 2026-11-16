@@ -49,6 +49,8 @@ import BlogPostAutomationForNonTechBusinesses from "./pages/BlogPost-Automation-
 import ServicePackages from "./pages/ServicePackages";
 import DynamicBlogPost from "./pages/DynamicBlogPost";
 import DynamicServiceDetail from "./pages/DynamicServiceDetail";
+import Sitemap from "./pages/Sitemap";
+import InternshipProgram from "./pages/InternshipProgram";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +66,8 @@ const App = () => (
           <Route path="/services" element={<Services />} />
           <Route path="/service/packages" element={<ServicePackages />} />
           <Route path="/services/packages" element={<ServicePackages />} />
+          <Route path="/internship" element={<InternshipProgram />} />
+          <Route path="/internship-program" element={<InternshipProgram />} />
           <Route path="/process" element={<Process />} />
           <Route path="/why-us" element={<WhyUs />} />
           <Route path="/case-studies" element={<CaseStudies />} />
@@ -108,6 +112,7 @@ const App = () => (
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
           <Route path="/refund-and-cancellation-policy" element={<RefundAndCancellationPolicy />} />
+          <Route path="/sitemap" element={<Sitemap />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
