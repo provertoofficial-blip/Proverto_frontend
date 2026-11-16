@@ -28,6 +28,8 @@ import {
   Globe,
   Loader2,
   Play,
+  Github,
+  Tag,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -36,6 +38,7 @@ import {
   verifyRazorpayPayment,
   getRazorpayConfig,
   submitContactInquiry,
+  validateCoupon,
 } from "@/lib/api";
 
 const WHATSAPP_NUMBER = "918770836725";
@@ -53,17 +56,18 @@ interface CurriculumModule {
 const curriculumModules: CurriculumModule[] = [
   {
     number: "01",
-    title: "Frontend Foundations",
-    subtitle: "HTML5, CSS3, Responsive Design & Modern JavaScript",
+    title: "Frontend Foundations & Git/GitHub",
+    subtitle: "HTML5, CSS3, Responsive Design, Modern JavaScript & Version Control",
     icon: FileCode,
     duration: "Month 1",
-    description: "Build semantic, accessible, and pixel-perfect web pages from scratch.",
+    description: "Build semantic, accessible, and pixel-perfect web pages from scratch while mastering Git.",
     skills: [
       "Semantic HTML5 & Modern CSS3 architecture",
       "Flexbox, CSS Grid & Responsive Layouts",
       "Modern JavaScript ES6+ (Arrow functions, Destructuring, Promises, Async/Await)",
       "DOM manipulation & Event Handling",
       "Git version control fundamentals & GitHub workflow",
+      "Creating repositories, branch management & pull requests",
     ],
   },
   {
@@ -177,49 +181,72 @@ const projectsToBuild = [
     tech: ["React", "Node.js", "Express", "MongoDB", "Razorpay API"],
     description: "End-to-end multi-tenant application with product catalog, cart state, order management, secure payment gateway, and admin panel.",
   },
-  {
-    title: "WhatsApp AI / Notification Automation Hub",
-    category: "Automation & Integration",
-    tech: ["Node.js", "REST APIs", "Webhooks", "Cloud Deploy"],
-    description: "Real-time automated notification engine connecting database events to messaging workflows and status webhooks.",
-  },
 ];
 
 const programRoadmap = [
   {
     month: "Month 1",
     phase: "Training Phase",
-    title: "Web Development Foundations",
-    summary: "HTML5, CSS3, modern responsive design, Flexbox, Grid, and foundational JavaScript ES6+.",
-    highlights: ["Semantic layout design", "Responsive mobile-first pages", "Async JavaScript & DOM"],
+    title: "Web Development Foundations & Git/GitHub",
+    summary:
+      "HTML5, CSS3, modern responsive design, Flexbox, Grid, foundational JavaScript ES6+, and version control with Git & GitHub.",
+    highlights: [
+      "Semantic layout design",
+      "Responsive mobile-first pages",
+      "Async JavaScript & DOM",
+      "Git & GitHub Workflows",
+    ],
   },
   {
     month: "Month 2",
     phase: "Training Phase",
     title: "Frontend Development with React",
-    summary: "Modern React architecture, component state, reusable hooks, and client-side routing.",
-    highlights: ["React Hooks & Context API", "Tailwind CSS styling", "Live API integration"],
+    summary:
+      "Modern React architecture, component state, reusable hooks, client-side routing, and hosting React applications with GitHub.",
+    highlights: [
+      "React Hooks & Context API",
+      "Tailwind CSS styling",
+      "Live API integration",
+      "GitHub Project Repositories",
+    ],
   },
   {
     month: "Month 3",
     phase: "Training Phase",
     title: "Backend Development with Node & Express",
-    summary: "Server-side architecture, RESTful API endpoints, middleware pipelines, and JWT authentication.",
-    highlights: ["Express.js routing", "JWT & password encryption", "API security best practices"],
+    summary:
+      "Server-side architecture, RESTful API endpoints, middleware pipelines, JWT authentication, and Git branch collaboration.",
+    highlights: [
+      "Express.js routing",
+      "JWT & password encryption",
+      "API security best practices",
+      "Git Feature Branching",
+    ],
   },
   {
     month: "Month 4",
     phase: "Training Phase",
     title: "Database & Full Stack Integration",
-    summary: "MongoDB database design, Mongoose models, full-stack wiring, testing, and cloud deployment.",
-    highlights: ["MongoDB CRUD & aggregation", "Connecting React with Express", "Cloud deployment on Render/Vercel"],
+    summary:
+      "MongoDB database design, Mongoose models, full-stack wiring, testing, and continuous cloud deployment via GitHub CI/CD.",
+    highlights: [
+      "MongoDB CRUD & aggregation",
+      "Connecting React with Express",
+      "GitHub CI/CD & Cloud Deploy",
+    ],
   },
   {
     month: "Months 5–6",
     phase: "Internship Phase",
     title: "Supervised Project Internship",
-    summary: "Live team collaboration, sprint assignments, code reviews, pull requests, and final project demonstration.",
-    highlights: ["Real company tasks & PR reviews", "Agile sprint cycles", "Dual industry certification"],
+    summary:
+      "Live team collaboration, GitHub pull requests, agile sprint assignments, peer code reviews, and final project demonstration.",
+    highlights: [
+      "GitHub PRs & Peer Code Reviews",
+      "Real company tasks",
+      "Agile sprint cycles",
+      "Dual industry certification",
+    ],
   },
 ];
 
@@ -269,6 +296,10 @@ const faqsList = [
     answer: "Yes! We offer a flexible installment plan: you can pay ₹10,000 as the first installment upon registration, and the second installment of ₹10,000 before commencing the second half of the program.",
   },
   {
+    question: "Can I get a refund if I decide not to continue after registering?",
+    answer: "Yes. If you are not going to continue after registration, please email us at support@provertoglobal.com with a transparent reason within 3 days after registration. We will verify your request and process your refund back within 48–72 hours.",
+  },
+  {
     question: "What happens if I miss a live session?",
     answer: "Every live session is recorded and made available in the student portal within 24 hours. You also receive complete session notes, code snippets, and access to dedicated mentor doubt-clearing slots.",
   },
@@ -287,6 +318,37 @@ const InternshipProgram = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Referral Code State
+  const [referralInput, setReferralInput] = useState("");
+  const [appliedReferral, setAppliedReferral] = useState<{
+    code: string;
+    discountType: "percentage" | "fixed";
+    discountValue: number;
+    discountAmount: number;
+    description?: string;
+  } | null>(null);
+  const [isCheckingReferral, setIsCheckingReferral] = useState(false);
+  const [referralError, setReferralError] = useState("");
+
+  const basePlanAmount = selectedPlan === "installment" ? 10000 : 19499;
+  const discountAmount = appliedReferral
+    ? Math.min(appliedReferral.discountAmount || 0, basePlanAmount - 1)
+    : 0;
+  const payableAmount = Math.max(1, basePlanAmount - discountAmount);
+
+  // Re-calculate discount when user toggles plan between installment & full
+  useEffect(() => {
+    if (appliedReferral) {
+      if (appliedReferral.discountType === "percentage") {
+        const newDisc = Math.round((basePlanAmount * appliedReferral.discountValue) / 100);
+        setAppliedReferral((prev: any) => ({
+          ...prev,
+          discountAmount: newDisc,
+        }));
+      }
+    }
+  }, [selectedPlan]);
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
@@ -294,6 +356,46 @@ const InternshipProgram = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleApplyReferral = async () => {
+    if (!referralInput.trim()) {
+      toast.error("Please enter a referral code");
+      return;
+    }
+
+    setIsCheckingReferral(true);
+    setReferralError("");
+
+    try {
+      const res = await validateCoupon({
+        code: referralInput.trim(),
+        amount: basePlanAmount,
+      });
+
+      if (res.success && res.data) {
+        setAppliedReferral(res.data);
+        toast.success(
+          `Referral code "${res.data.code}" applied! You save ₹${res.data.discountAmount.toLocaleString("en-IN")}`
+        );
+      } else {
+        setAppliedReferral(null);
+        const errMsg = res.message || "Invalid or expired referral code";
+        setReferralError(errMsg);
+        toast.error(errMsg);
+      }
+    } catch (err: any) {
+      setReferralError("Could not validate referral code. Please try again.");
+    } finally {
+      setIsCheckingReferral(false);
+    }
+  };
+
+  const handleRemoveReferral = () => {
+    setAppliedReferral(null);
+    setReferralInput("");
+    setReferralError("");
+    toast.info("Referral code removed");
   };
 
   const handleWhatsAppInquiry = () => {
@@ -322,11 +424,10 @@ const InternshipProgram = () => {
       return;
     }
 
-    const planAmount = selectedPlan === "installment" ? 10000 : 20000;
     const planName =
       selectedPlan === "installment"
         ? "Full Stack Program - 1st Installment (₹10,000)"
-        : "Full Stack Program - Full Payment (₹20,000)";
+        : "Full Stack Program - Full Payment (₹19,499)";
 
     setIsSubmitting(true);
 
@@ -339,17 +440,21 @@ const InternshipProgram = () => {
         return;
       }
 
-      toast.loading("Opening secure Razorpay payment window...", { id: "enroll-pay" });
+      toast.loading("Opening secure checkout...", { id: "enroll-pay" });
 
       // Step B: Create Razorpay Order on Backend
       const orderRes = await createRazorpayOrder({
-        amount: planAmount,
+        amount: payableAmount,
         currency: "INR",
         customer: formData.name.trim(),
         email: formData.email.trim(),
         phone: formData.phone.trim(),
         packageTitle: planName,
-        notes: `Enrollment in Full Stack Program - ${planName}`,
+        couponCode: appliedReferral?.code || "",
+        discountAmount,
+        notes: `Enrollment in Full Stack Program - ${planName}${
+          appliedReferral ? ` | Referral: ${appliedReferral.code} (-₹${discountAmount})` : ""
+        }`,
       });
 
       toast.dismiss("enroll-pay");
@@ -357,7 +462,7 @@ const InternshipProgram = () => {
       // Resilient extraction of keyId & orderId
       let keyId = orderRes?.keyId || "";
       let orderId = orderRes?.order?.id || orderRes?.id || orderRes?.orderId || "";
-      let amountInSubunits = orderRes?.order?.amount || Math.round(planAmount * 100);
+      let amountInSubunits = orderRes?.order?.amount || Math.round(payableAmount * 100);
 
       if (!keyId) {
         const configRes = await getRazorpayConfig();
@@ -397,6 +502,7 @@ const InternshipProgram = () => {
           customer: formData.name.trim(),
           email: formData.email.trim(),
           phone: formData.phone.trim(),
+          referralCode: appliedReferral?.code || "",
         },
         theme: {
           color: "#0284c7",
@@ -413,7 +519,7 @@ const InternshipProgram = () => {
           razorpay_signature?: string;
         }) => {
           try {
-            toast.loading("Verifying payment & confirming enrollment...", {
+            toast.loading("Verifying payment & confirming registration...", {
               id: "verify-enroll",
             });
 
@@ -426,9 +532,13 @@ const InternshipProgram = () => {
               email: formData.email.trim(),
               phone: formData.phone.trim(),
               packageTitle: planName,
-              amount: planAmount,
+              amount: payableAmount,
               currency: "INR",
-              notes: `Internship Enrollment: ${planName}`,
+              couponCode: appliedReferral?.code || "",
+              discountAmount,
+              notes: `Internship Enrollment: ${planName}${
+                appliedReferral ? ` | Referral: ${appliedReferral.code}` : ""
+              }`,
             });
 
             // Step E: Record contact inquiry in MongoDB leads
@@ -437,7 +547,9 @@ const InternshipProgram = () => {
               email: formData.email.trim(),
               phone: formData.phone.trim(),
               service: planName,
-              notes: `Verified Razorpay Payment: ${response.razorpay_payment_id} | Amount: ₹${planAmount.toLocaleString("en-IN")} | Plan: ${planName}`,
+              notes: `Verified Razorpay Payment: ${response.razorpay_payment_id} | Amount: ₹${payableAmount.toLocaleString("en-IN")} | Plan: ${planName}${
+                appliedReferral ? ` | Referral: ${appliedReferral.code} (Saved ₹${discountAmount})` : ""
+              }`,
               inquiryType: "Internship Enrollment",
               paymentMethod: "Razorpay",
             });
@@ -445,12 +557,12 @@ const InternshipProgram = () => {
             toast.dismiss("verify-enroll");
             setIsSubmitting(false);
 
-            toast.success("Payment verified! Your enrollment has been confirmed.");
+            toast.success("Payment verified! Your registration has been confirmed.");
             navigate("/thank-you", {
               state: {
                 transactionId: response.razorpay_payment_id,
                 orderId: response.razorpay_order_id || orderId,
-                amount: planAmount,
+                amount: payableAmount,
                 currency: "INR",
                 customer: formData.name.trim(),
                 email: formData.email.trim(),
@@ -579,10 +691,11 @@ const InternshipProgram = () => {
                 <div className="space-y-2.5 font-mono text-xs sm:text-sm text-slate-300">
                   <p className="text-sky-400 font-semibold">$ npx create-proverto-developer</p>
                   <p className="text-slate-400">✓ Step 1: HTML5, Modern CSS & ES6+ Javascript</p>
-                  <p className="text-slate-400">✓ Step 2: React Component Hierarchy & State</p>
-                  <p className="text-slate-400">✓ Step 3: Node.js, Express & REST API Endpoints</p>
-                  <p className="text-slate-400">✓ Step 4: MongoDB Schemas & Cloud Deployments</p>
-                  <p className="text-emerald-400 font-medium">✓ Step 5: 2-Month Supervised Client Project Sprint</p>
+                  <p className="text-slate-400">✓ Step 2: Git & GitHub Workflows & Version Control</p>
+                  <p className="text-slate-400">✓ Step 3: React Component Hierarchy & State</p>
+                  <p className="text-slate-400">✓ Step 4: Node.js, Express & REST API Endpoints</p>
+                  <p className="text-slate-400">✓ Step 5: MongoDB Schemas & Cloud Deployments</p>
+                  <p className="text-emerald-400 font-medium">✓ Step 6: 2-Month Supervised Client Project Sprint</p>
                 </div>
 
                 <div className="bg-[#061220] rounded-xl p-5 border border-sky-500/20 flex flex-col justify-center">
@@ -592,9 +705,13 @@ const InternshipProgram = () => {
                   <p className="text-white text-sm font-semibold mb-2">
                     Dual Industry Verification
                   </p>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <p className="text-xs text-slate-400 leading-relaxed mb-3">
                     Issued by ProVerto Global Technologies upon completion of code defense and sprint reviews.
                   </p>
+                  <div className="pt-2.5 border-t border-slate-800 flex items-center gap-2 text-xs text-slate-300 font-mono">
+                    <Github className="w-3.5 h-3.5 text-sky-400" />
+                    <span>Live GitHub Portfolio & Code Repos</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1237,8 +1354,13 @@ const InternshipProgram = () => {
                         </span>
                       </div>
 
-                      <div className="text-2xl sm:text-3xl font-extrabold text-sky-400 mb-2">
-                        ₹20,000
+                      <div className="flex items-baseline gap-2.5 mb-2">
+                        <span className="text-2xl sm:text-3xl font-extrabold text-sky-400">
+                          ₹19,499
+                        </span>
+                        <span className="text-base sm:text-lg text-slate-500 line-through font-semibold">
+                          ₹29,999
+                        </span>
                       </div>
 
                       <p className="text-xs text-slate-400 leading-relaxed mb-4">
@@ -1263,48 +1385,107 @@ const InternshipProgram = () => {
                   </div>
                 </div>
 
-                {/* Razorpay Supported Payment Methods Badge */}
-                <div className="bg-[#070d18] rounded-xl p-3.5 border border-slate-800 text-xs">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-                      <CreditCard className="w-3.5 h-3.5 text-sky-400" />
-                      Razorpay Payment Gateway
-                    </span>
-                    <span className="text-[10px] text-emerald-400 font-mono bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60 flex items-center gap-1">
-                      <ShieldCheck className="w-3 h-3" /> 256-Bit SSL
-                    </span>
+                {/* Referral Code Box */}
+                <div className="bg-[#070d18] rounded-2xl p-4 sm:p-5 border border-slate-800">
+                  <div className="flex items-center justify-between mb-2.5">
+                    <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-sky-400" />
+                      <span>Have a referral code?</span>
+                    </label>
+                    {appliedReferral && (
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded uppercase">
+                        Applied
+                      </span>
+                    )}
                   </div>
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">UPI (GPay / PhonePe / Paytm)</span>
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">Debit / Credit Cards</span>
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">NetBanking (50+ Banks)</span>
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300">Wallets</span>
-                  </div>
+
+                  {appliedReferral ? (
+                    <div className="p-3 rounded-xl bg-[#091728] border border-emerald-500/40 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                          <Check className="w-4 h-4 stroke-[2.5]" />
+                        </div>
+                        <div>
+                          <p className="font-mono font-bold text-emerald-400 text-sm tracking-wider uppercase">
+                            {appliedReferral.code}
+                          </p>
+                          <p className="text-[11px] text-slate-400">
+                            Referral discount of ₹{discountAmount.toLocaleString("en-IN")} applied
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveReferral}
+                        className="text-xs text-slate-400 hover:text-rose-400 font-semibold px-2.5 py-1 rounded hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={referralInput}
+                        onChange={(e) => {
+                          setReferralInput(e.target.value.toUpperCase().replace(/\s+/g, ""));
+                          if (referralError) setReferralError("");
+                        }}
+                        placeholder="ENTER REFERRAL CODE"
+                        className="flex-1 h-11 px-3.5 rounded-xl bg-[#0c1322] border border-slate-700/80 text-white placeholder-slate-500 text-xs font-mono tracking-wider uppercase focus:outline-none focus:border-sky-500 transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyReferral}
+                        disabled={isCheckingReferral || !referralInput.trim()}
+                        className="px-5 h-11 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white font-bold text-xs transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 shadow-sm"
+                      >
+                        {isCheckingReferral ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          "Apply"
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {referralError && (
+                    <p className="text-[11px] text-rose-400 mt-2 flex items-center gap-1">
+                      <span>✕</span> {referralError}
+                    </p>
+                  )}
+
+                  {appliedReferral && (
+                    <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Total payable after referral:</span>
+                      <span className="text-base font-extrabold text-emerald-400">
+                        ₹{payableAmount.toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Submit Button */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-4 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-60 text-white font-bold text-sm transition-all shadow-lg hover:shadow-sky-500/25 flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-xl bg-sky-500 hover:bg-sky-400 disabled:opacity-60 text-white font-bold text-sm transition-all shadow-lg hover:shadow-sky-500/25 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Opening Razorpay checkout...</span>
+                      <span>Processing registration...</span>
                     </>
                   ) : (
                     <>
-                      <span>
-                        Proceed to Pay {selectedPlan === "installment" ? "₹10,000" : "₹20,000"} via Razorpay
-                      </span>
+                      <span>Register Now</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
 
                 <p className="text-[11px] text-center text-slate-400">
-                  🔒 256-Bit SSL Encrypted Razorpay Checkout. Official invoice and admission letter issued post-payment.
+                  🔒 256-Bit SSL Encrypted Razorpay Checkout • 3-Day Refund Policy (support@provertoglobal.com)
                 </p>
               </form>
             </div>
